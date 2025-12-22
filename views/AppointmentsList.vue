@@ -4,32 +4,43 @@
     <nav class="navbar navbar-light bg-white shadow-sm mb-4">
       <div class="container d-flex justify-content-between align-items-center">
         <span class="fw-bold fs-5">Doctor Appointments</span>
-        <router-link to="/appointments" class="btn btn-outline-primary">⇆ Switch Page</router-link>
+        <router-link to="/" class="btn btn-outline-primary">⇆ Switch Page</router-link>
       </div>
     </nav>
 
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-      <div class="card shadow p-5" style="width: 100%; max-width: 700px;">
-        <h2 class="text-center mb-4 text-primary">Book an Appointment</h2>
-        <form class="row g-3" @submit.prevent="submitAppointment">
-          <div class="col-12">
-            <input v-model="name" type="text" class="form-control" placeholder="Your Name" required />
-          </div>
-          <div class="col-12">
-            <input v-model="symptoms" type="text" class="form-control" placeholder="Symptoms" required />
-          </div>
-          <div class="col-12">
-            <select v-model="selectedSlot" class="form-select" required>
-              <option disabled value="">Select a Time Slot</option>
-              <option v-for="slot in slots" :key="slot" :value="slot">
-                {{ slot }}
-              </option>
-            </select>
-          </div>
-          <div class="col-12">
-            <button type="submit" class="btn btn-primary w-100">Book</button>
-          </div>
-        </form>
+    <div class="container">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Appointments</h5>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-bordered table-striped mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Symptoms</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Update</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="appointment in appointments" :key="appointment.appointmentId">
+                <td>{{ appointment.patientName }}</td>
+                <td>{{ appointment.symptoms }}</td>
+                <td>{{ appointment.slot }}</td>
+                <td>{{ appointment.status }}</td>
+                <td>
+                  <select class="form-select" :value="appointment.status" @change="e => updateStatus(appointment, e.target.value)">
+                    <option>Pending</option>
+                    <option>In Progress</option>
+                    <option>Completed</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -37,51 +48,67 @@
 
 <script>
 export default {
-  name: "BookAppointment",
+  name: "AppointmentsList",
   data() {
     return {
-      name: "",
-      symptoms: "",
-      selectedSlot: "",
-      slots: []
+      appointments: []
     };
   },
   mounted() {
-  fetch("https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/slots")
-    .then(res => res.json())
-    .then(data => {
-      // Handle if Lambda returns {body: ...} or just the array
-      const items = data.body ? (typeof data.body === 'string' ? JSON.parse(data.body) : data.body) : data;
-      
-      // Filter for available slots
-      this.slots = items.filter(s => !s.isBooked).map(s => s.slot);
-    });
-},
+    this.fetchAppointments();
+  },
   methods: {
-    submitAppointment() {
-      const payload = {
-        patientName: this.name,
-        symptoms: this.symptoms,
-        slot: this.selectedSlot
-      };
-
-     fetch("https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/appointments", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(payload) // Just send the payload directly
-})
-        .then(res => res.json())
-        .then(() => {
-          alert("Appointment booked!");
-          this.name = "";
-          this.symptoms = "";
-          this.selectedSlot = "";
-        })
-        .catch(err => {
-          console.error("Error booking appointment:", err);
-          alert("Failed to book appointment.");
-        });
+    fetchAppointments() {
+      fetch("https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/appointments")
+  .then(res => res.json())
+  .then(data => {
+    // If your Lambda returns { body: "..." }
+    if (data.body) {
+      this.appointments = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+    } else {
+      // If your Lambda returns the array directly
+      this.appointments = data;
     }
-  }
+  });
+    },
+    updateStatus(appointment, newStatus) {
+      // Log the full appointment object and its ID
+      console.log(" appointment (proxy):", appointment);
+      const cleanAppointment = JSON.parse(JSON.stringify(appointment));
+      console.log(" Clean appointment:", cleanAppointment);
+      console.log("appointmentId:", cleanAppointment.appointmentId);
+      console.log(" appointmentId (direct):", appointment.appointmentId);
+
+      const url = "https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/appointments";
+      const payload = { appointmentId: appointment.appointmentId, 
+    status: newStatus };
+
+      fetch(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+          .then(async res => {
+
+            const rawBody = await res.text();
+
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}: ${rawBody}`);
+            }
+
+            return JSON.parse(rawBody);
+          })
+          .then(() => {
+            alert("Status updated!");
+          })
+          .catch(err => {
+            console.error(" Failed to update status:", err);
+            alert("Update failed. See console for details.");
+          });
+    }
+
+     }
 };
 </script>
