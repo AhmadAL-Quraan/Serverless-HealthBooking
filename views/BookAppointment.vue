@@ -64,7 +64,7 @@ export default {
      fetch("https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/appointments", {
     method: "POST",
     headers: { "Content-Type": "application/json" }, 
-    body: JSON.stringify({ body: JSON.stringify(payload)
+       body: JSON.stringify({ body: JSON.stringify(payload) })
  // Just send the payload directly
 })
         .then(res => res.json())
