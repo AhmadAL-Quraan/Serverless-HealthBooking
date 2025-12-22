@@ -47,13 +47,16 @@ export default {
     };
   },
   mounted() {
-    fetch("https://e2m2b7y8c9.execute-api.us-east-1.amazonaws.com/prod/slots")
-      .then(res => res.json())
-      .then(data => {
-        const parsed = JSON.parse(data.body);
-        this.slots = parsed.filter(s => !s.isBooked).map(s => s.slot);
-      });
-  },
+  fetch("https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/slots")
+    .then(res => res.json())
+    .then(data => {
+      // Handle if Lambda returns {body: ...} or just the array
+      const items = data.body ? (typeof data.body === 'string' ? JSON.parse(data.body) : data.body) : data;
+      
+      // Filter for available slots
+      this.slots = items.filter(s => !s.isBooked).map(s => s.slot);
+    });
+},
   methods: {
     submitAppointment() {
       const payload = {
@@ -62,11 +65,11 @@ export default {
         slot: this.selectedSlot
       };
 
-      fetch("https://e2m2b7y8c9.execute-api.us-east-1.amazonaws.com/prod/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: JSON.stringify(payload) })
-      })
+     fetch("https://ak11egsmuf.execute-api.us-east-1.amazonaws.com/dev/appointments", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload) // Just send the payload directly
+})
         .then(res => res.json())
         .then(() => {
           alert("Appointment booked!");
