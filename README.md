@@ -102,3 +102,6 @@ Make sure:
 - IAM permissions are correctly configured for each Lambda function.
 - All endpoints are tested via API Gateway before connecting to the frontend.
 - You follow the structure shown above to pass the course project requirements.
+
+
+* The [link](https://main.d17v27baxib7xu.amplifyapp.com/) for the HealthBooking website 
